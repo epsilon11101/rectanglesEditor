@@ -1,0 +1,8 @@
+#canva{
+    max-width: 90%;
+    max-height: 90%;
+    object-fit: contain; 
+    background-color: white;
+    border: 5px solid var(--primary_pink);
+    border-radius: 15px;
+}

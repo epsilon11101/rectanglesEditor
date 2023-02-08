@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rectangle Editor</title>
+</head>
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li><img src="./public/vite.svg" alt=""></li>
+                <li> 
+                    <div class="sub-menu">
+                        <button value="json">Open JSON file</button>
+                        <button value="img">Open Image</button>
+                        <button value="color">Color Selector</button>
+                        <button value="edit">Edit Rectangle</button>
+                        
+                    </div>
+                </li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+
+        <div class="color_container">
+            <sp-color-wheel class="color_selector hide" ></sp-color-wheel>
+        </div>
+
+        <div class="name">
+            <p>Json file: </p>
+            <p>Image file: </p>
+        </div>
+
+
+
+      <canvas id="canva" width="500" height="500">
+
+      </canvas>
+
+    </main>
+    <footer>
+        <div>
+            Made with : AMV | amiranda@ixmatix.com | IXMATIX
+        </div>
+    </footer>
+    <script type="module" src="./src/js/index.js"></script>
+</body>
+</html>

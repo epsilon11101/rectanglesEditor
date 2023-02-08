@@ -1,0 +1,43 @@
+main{
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-image: url('../../public/robots_bg.jpeg');
+    gap: 20px;
+
+}
+
+.name{
+    margin-top: 20px;
+    width: 90%;
+    height: min(100px,150px);
+    background-color: var(--secundary_pink);
+    border: 2px solid var(--primary_green);
+    border-radius: 15px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-family: var(--roboto);
+    font-weight: bolder;
+}
+
+.color_container{
+    position: fixed;
+    width: 100%;
+    background-color: transparent;
+    top:11%;
+}
+.color_selector{
+    position: absolute;
+    left:2%;
+    width: 150px; 
+    height: 150px;
+}
+
+.hide{
+    display: none;
+}
