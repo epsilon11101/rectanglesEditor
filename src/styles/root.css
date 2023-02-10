@@ -1,0 +1,21 @@
+
+
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap');
+
+:root {
+    --primary_white: #fff;
+    --primary_blue: #0089e4;
+    --primary_pink: #e90c8e;
+    --secundary_blue: #2597f4;
+    --secundary_pink: #ff3ca5;
+    --primary_green: #97f425;
+    --roboto: 'Roboto',
+        sans-serif;
+}
+
+* {
+    margin: 0 auto;
+    padding: 0;
+    box-sizing: border-box;
+}
+

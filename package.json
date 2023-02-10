@@ -1,0 +1,26 @@
+{
+  "name": "rectanglesEditor",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.20.12",
+    "@babel/preset-env": "^7.20.2",
+    "vite": "^4.1.0"
+  },
+  "main": "index.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@spectrum-web-components/color-wheel": "^0.4.8",
+    "axios": "^1.3.2",
+    "notiflix": "^3.2.6"
+  }
+}
