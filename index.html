@@ -6,25 +6,27 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rectangle Editor</title>
+    <script src="https://kit.fontawesome.com/4050c71461.js" crossorigin="anonymous"></script>
 </head>
 <body>
     <header>
-        <nav>
+        <nav >
             <ul>
                 <li><img src="./public/vite.svg" alt=""></li>
                 <li> 
                     <div class="sub-menu">
                         <button value="json">Open JSON file</button>
-                        <button value="img">Open Image</button>
+                        <button value="img" class="disabled">Open Image</button>
                         <button value="color">Color Selector</button>
-                        <button value="edit">Edit Rectangle</button>
+                        <button value="save" class="disabled">Save JSON</button>
+                        <button value="help">Help</button>
                         
                     </div>
                 </li>
             </ul>
         </nav>
     </header>
-    <main>
+    <main >
 
         <div class="color_container">
             <sp-color-wheel class="color_selector hide" ></sp-color-wheel>
@@ -35,6 +37,10 @@
             <p>Image file: </p>
         </div>
 
+        <div class="instructions">
+
+        </div>
+
 
 
       <canvas id="canva" width="500" height="500">
@@ -42,10 +48,12 @@
       </canvas>
 
     </main>
-    <footer>
-        <div>
-            Made with : AMV | amiranda@ixmatix.com | IXMATIX
-        </div>
+    <footer >
+        <p>
+    Developed with <span class="fa-solid fa-heart"></span> AMV | <a href="mailto:amiranda@ixmatix.com">amiranda@ixmatix.com</a>
+| IXMATIX
+        </p>
+        
     </footer>
     <script type="module" src="./src/js/index.js"></script>
 </body>

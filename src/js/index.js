@@ -1,20 +1,9 @@
-//TODO: AGREGAR MODAL PARA MOSTRAR INSTRUCCIONES OCULTAR EL COLOR CAMBIAR NOMBRE DE BOTONES
-
-import "../styles/root.css";
-import "../styles/header.css";
-import "../styles/nav.css";
-import "../styles/main.css";
-import "../styles/canvas.css";
+import "./styles";
 import Rectangle from "./rectangle";
-import "@spectrum-web-components/color-wheel/sp-color-wheel.js";
-
 import Notiflix from "notiflix";
 import axios from "axios";
 
-const doc = document;
-
 const selector = document.createElement("input");
-const json_selector = document.createElement("input");
 const $btn_menu = document.querySelector(".sub-menu");
 const $json_title = document.querySelector(".name p:first-child");
 const $img_title = document.querySelector(".name p:last-child");
@@ -24,104 +13,150 @@ const ctx = $canva.getContext("2d");
 const img = new Image();
 
 let rectColor = "#FF0000";
+
 let isDrawing = false;
 let isEditingWH = false;
 let isEditingXY = false;
+
 let startX, startY, endX, endY;
 let currentRectIndex = -1;
 
-let rectangles = [];
+const rectangles = [];
+const rectangles_copy = [];
 
 selector.type = "file";
 
 $color_selector.addEventListener("change", (e) => {
   rectColor = `#${$color_selector.color}`;
+  $canva.style.borderColor = `${rectColor}`;
 });
 
-function drawRectangles() {
-  ctx.drawImage(img, 0, 0);
-  for (const key in rectangles) {
-    const rectangle = rectangles[key].properties;
-    const { xmin, ymin, width, height, color } = rectangle;
-    ctx.lineWidth = 5;
-    ctx.strokeStyle = color;
-    ctx.strokeRect(xmin, ymin, width, height);
-  }
-}
+document.addEventListener("keydown", (event) => {
+  event.preventDefault();
+  const { ctrlKey, code, key, shiftKey } = event;
 
-document.addEventListener("keydown", function (e) {
-  e.preventDefault();
-  //remove rectangle
-  if (e.ctrlKey && e.key === "d") {
-    delete rectangles[currentRectIndex];
-    isEditingWH = false;
-    isEditingXY = false;
-    drawRectangles();
-  } else if (e.ctrlKey && e.shiftKey && (e.code === "KeyE" || e.key === "e")) {
-    isEditingWH = false;
-    isEditingXY = true;
-    console.log(isEditingWH, isEditingXY);
-  } else if (e.ctrlKey && e.key == "e") {
-    isEditingWH = true;
-    isEditingXY = false;
+  if (ctrlKey && key === "r") {
+    Notiflix.Notify.info("REMOVE RECTANGLE  ENABLED");
+    handleDeleteRectangle();
+  } else if (ctrlKey && shiftKey && (code === "KeyE" || key === "e")) {
+    Notiflix.Notify.info("EDIT (x,y)  ENABLED");
+    handleEditRectangleXY();
+  } else if (ctrlKey && key === "e") {
+    Notiflix.Notify.info("EDIT (w,h)  ENABLED");
+    handleEditRectangleWH();
+  } else if (ctrlKey && key === "d") {
+    Notiflix.Notify.info("DRAWING RECTANGLE  ENABLED");
+    handleDrawRectangle();
+  } else if (ctrlKey && key === "z") {
+    handleRestoreRectangle();
   }
 });
-$canva.addEventListener("mousemove", (e) => {
-  if (isDrawing) {
-    let obj_cor = getMousePos(e);
-    endX = obj_cor.x;
-    endY = obj_cor.y;
-    ctx.clearRect(0, 0, $canva.width, $canva.height);
-    ctx.drawImage(img, 0, 0);
 
-    rectangles.forEach((rect) => {
-      ctx.strokeStyle = rect.color;
-      ctx.strokeRect(rect.startX, rect.startY, rect.width, rect.height);
-    });
-    ctx.strokeStyle = rectColor;
-    ctx.lineWidth = 5;
-    ctx.strokeRect(startX, startY, endX - startX, endY - startY);
-  } else if (isEditingWH && !isEditingXY) {
-    let obj_cor = getMousePos(e);
-    let newWidth = obj_cor.x - rectangles[currentRectIndex].properties.xmin;
-    let newHeight = obj_cor.y - rectangles[currentRectIndex].properties.ymin;
-
-    rectangles[currentRectIndex].properties.width = newWidth;
-    rectangles[currentRectIndex].properties.height = newHeight;
-    rectangles[currentRectIndex].properties.color = rectColor;
-
-    drawRectangles();
-  } else if (!isEditingWH && isEditingXY) {
-    let obj_cor = getMousePos(e);
-    rectangles[currentRectIndex].properties.xmin = obj_cor.x;
-    rectangles[currentRectIndex].properties.ymin = obj_cor.y;
-    rectangles[currentRectIndex].properties.color = rectColor;
-    console.log(
-      rectangles[currentRectIndex].properties.xmin,
-      rectangles[currentRectIndex].properties.ymin
-    );
-    drawRectangles();
-  }
-});
 $canva.addEventListener("click", (e) => {
   let obj_cor = getMousePos(e);
   let clickX = obj_cor.x;
   let clickY = obj_cor.y;
 
-  for (const key in rectangles) {
-    const rectangle = rectangles[key].properties;
-    const { xmin, ymin, width, height } = rectangle;
+  for (const key_r in rectangles) {
+    const rectangle = rectangles[key_r].properties;
+    const { xmin, ymin, width, height, key } = rectangle;
     if (
       clickX >= xmin &&
       clickX <= xmin + width &&
       clickY >= ymin &&
       clickY <= ymin + height
     ) {
-      currentRectIndex = key;
+      currentRectIndex = key_r;
+      Notiflix.Notify.info(`Rectangle ${key} selected`);
       return;
     }
   }
 });
+
+$canva.addEventListener("dblclick", (e) => {
+  restoreDrawingFLags();
+});
+
+$canva.addEventListener("mousedown", (e) => {
+  // if (!isEditingWH) isDrawing = true;
+  if (isDrawing) {
+    let obj_cor = getMousePos(e);
+    startX = obj_cor.x;
+    startY = obj_cor.y;
+  }
+});
+$canva.addEventListener("mousemove", (e) => {
+  let obj_cor = getMousePos(e);
+
+  if (isDrawing) {
+    isUserDrawing(obj_cor);
+  } else if (isEditingWH && !isEditingXY) {
+    isUserEditWH(obj_cor);
+  } else if (!isEditingWH && isEditingXY) {
+    isUserEditXY(obj_cor);
+  }
+});
+
+$canva.addEventListener("mouseup", (e) => {
+  if (isDrawing) {
+    rectangles.push(
+      new Rectangle({
+        key: "new",
+        xmin: startX,
+        ymin: startY,
+        xmax: endX,
+        ymax: endY,
+        width: endX - startX,
+        height: endY - startY,
+        tag: "div",
+        label: "div",
+        color: rectColor,
+      })
+    );
+  }
+
+  restoreDrawingFLags();
+});
+
+$btn_menu.addEventListener("click", async (e) => {
+  const targetValue = e.target.value;
+  switch (true) {
+    case targetValue.includes("img"):
+      handleOpenImage(selector);
+      break;
+    case targetValue.includes("json"):
+      handleOpenJSON(selector);
+      break;
+    case targetValue.includes("color"):
+      handleOpenColorSelector($color_selector);
+      break;
+    case targetValue.includes("help"):
+      handleOpenInstructions();
+      break;
+    case targetValue.includes("save"):
+      handleSaveJSON(rectangles);
+      break;
+    default:
+      break;
+  }
+});
+
+selector.addEventListener("change", async () => {
+  const openImgBtn = document.querySelector("button[value='img']");
+  const saveJsonBtn = document.querySelector("button[value='save']");
+  const fileDataUrl = await selectFile(selector);
+
+  try {
+    if (selector.accept.includes("image")) {
+      handleImageFile(fileDataUrl, openImgBtn);
+    } else {
+      handleJsonFile(fileDataUrl, openImgBtn, saveJsonBtn);
+    }
+  } catch (error) {
+    Notiflix.Notify.failure(error);
+  }
+});
+
 const getMousePos = (evt) => {
   const rect = $canva.getBoundingClientRect();
   return {
@@ -134,73 +169,101 @@ const getMousePos = (evt) => {
   };
 };
 
-$canva.addEventListener("dblclick", (e) => {
+function drawRectangles() {
+  ctx.drawImage(img, 0, 0);
+  for (const key in rectangles) {
+    const rectangle = rectangles[key].properties;
+    const { xmin, ymin, width, height, color } = rectangle;
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = color;
+    ctx.strokeRect(xmin, ymin, width, height);
+  }
+}
+function restoreDrawingFLags() {
   isEditingWH = false;
   isEditingXY = false;
-});
-
-$canva.addEventListener("mousedown", (e) => {
-  // if (!isEditingWH) isDrawing = true;
-  let obj_cor = getMousePos(e);
-  startX = obj_cor.x;
-  startY = obj_cor.y;
-  ctx.lineWidth = 5;
-});
-
-$canva.addEventListener("mouseup", (e) => {
-  const color = rectColor;
   isDrawing = false;
-  isEditingWH = false;
-
-  // rectangles.push(
-  //   new Rectangle({
-  //     startX,
-  //     startY,
-  //     width: endX - startX,
-  //     height: endY - startY,
-  //     color,
-  //   })
-  // );
-});
-
-selector.addEventListener("change", async () => {
-  try {
-    const dataUrl = await selectFile(selector);
-    if (selector.accept.includes("image")) {
-      $img_title.innerText = `Image file: ${selector.files[0].name}`;
-      img.src = await dataUrl;
-      img.onload = () => {
-        $canva.width = img.width;
-        $canva.height = img.height;
-        // rectangles.length = 0;
-        ctx.drawImage(img, 0, 0);
-        drawRectangles();
-      };
-    } else {
-      const json_rectangles = await axios.get(dataUrl);
-      const color = rectColor;
-      try {
-        const data = await json_rectangles.data;
-        for (const key in data) {
-          const { xmin, ymin, width, height } = data[key];
-          const rectangle = new Rectangle({
-            xmin,
-            ymin,
-            width,
-            height,
-            color,
-            key,
-          });
-          rectangles.push(rectangle);
-        }
-      } catch (error) {
-        Notiflix.Notify.failure("error loading JSON file");
-      }
-    }
-  } catch (error) {
-    Notiflix.Notify.failure(error);
+}
+function handleRestoreRectangle() {
+  restoreDrawingFLags();
+  if (rectangles_copy.length > 0) {
+    const { key } = rectangles_copy[0].properties;
+    rectangles.push(rectangles_copy[0]);
+    rectangles_copy.length = 0;
+    Notiflix.Notify.success(`Restore ${key} rectangle`);
+    drawRectangles();
+  } else {
+    Notiflix.Notify.failure("No items to restore");
   }
-});
+}
+function handleDeleteRectangle() {
+  const key = rectangles[currentRectIndex].properties.key;
+  rectangles_copy.push(rectangles[currentRectIndex]);
+  delete rectangles[currentRectIndex];
+  restoreDrawingFLags();
+  Notiflix.Notify.warning(`Remove ${key} rectangle`);
+  drawRectangles();
+}
+
+function handleEditRectangleXY() {
+  isEditingWH = false;
+  isEditingXY = true;
+  isDrawing = false;
+}
+
+function handleEditRectangleWH() {
+  isEditingWH = true;
+  isEditingXY = false;
+  isDrawing = false;
+}
+
+function handleDrawRectangle() {
+  isEditingWH = false;
+  isEditingXY = false;
+  isDrawing = true;
+}
+
+function isUserDrawing(obj_cor) {
+  endX = obj_cor.x;
+  endY = obj_cor.y;
+  drawRectangles();
+  ctx.strokeStyle = rectColor;
+  ctx.strokeRect(startX, startY, endX - startX, endY - startY);
+}
+function isUserEditWH(obj_cor) {
+  let newWidth = obj_cor.x - rectangles[currentRectIndex].properties.xmin;
+  let newHeight = obj_cor.y - rectangles[currentRectIndex].properties.ymin;
+
+  rectangles[currentRectIndex].properties.width = newWidth;
+  rectangles[currentRectIndex].properties.height = newHeight;
+  rectangles[currentRectIndex].properties.color = rectColor;
+
+  drawRectangles();
+}
+function isUserEditXY(obj_cor) {
+  rectangles[currentRectIndex].properties.xmin = obj_cor.x;
+  rectangles[currentRectIndex].properties.ymin = obj_cor.y;
+  rectangles[currentRectIndex].properties.color = rectColor;
+  drawRectangles();
+}
+
+function handleOpenColorSelector(colorSelector) {
+  colorSelector.classList.toggle("hide");
+}
+
+function handleSaveJSON(rectangles) {
+  const saveJSON = {};
+  rectangles.forEach((rectangle) => {
+    const elementKey = rectangle.properties.key;
+    saveJSON[elementKey] = rectangle.properties;
+  });
+  const objectJSON = JSON.stringify(saveJSON);
+  const blob = new Blob([objectJSON], { type: "application/json" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = "data.json";
+  link.click();
+}
 
 async function selectFile(selector) {
   return new Promise((resolve, reject) => {
@@ -211,18 +274,81 @@ async function selectFile(selector) {
   });
 }
 
-$btn_menu.addEventListener("click", async (e) => {
-  if (e.target.value.includes("img")) {
-    selector.accept = "";
-    selector.accept = "image/*";
-    selector.click();
-  } else if (e.target.value.includes("json")) {
-    selector.accept = "";
-    selector.accept = ".json";
-    selector.click();
-  } else if (e.target.value.includes("color")) {
-    e.target.classList.remove(".hide");
-    $color_selector.classList.remove("hide");
-  } else if (e.target.value.includes("edit")) {
+async function handleOpenImage(selector) {
+  selector.accept = "";
+  selector.accept = "image/*";
+  selector.click();
+}
+
+async function handleOpenJSON(selector) {
+  selector.accept = "";
+  selector.accept = ".json";
+  selector.click();
+}
+async function handleOpenInstructions() {
+  try {
+    const modalCode = await axios.get("src/html/instructions.html");
+    const $modal = document.querySelector(".instructions");
+    $modal.innerHTML = modalCode.data;
+    $modal.style.display = "flex";
+    const $modalBtn = document.querySelector(".modal span");
+    $modalBtn.addEventListener("click", (e) => {
+      $modal.style.display = "none";
+    });
+  } catch (error) {
+    console.error(error);
   }
-});
+}
+async function handleImageFile(fileDataUrl, openImgBtn) {
+  $img_title.innerText = `Image file: ${selector.files[0].name}`;
+  img.src = await fileDataUrl;
+  openImgBtn.classList.toggle("disabled");
+
+  img.onload = () => {
+    $canva.width = img.width;
+    $canva.height = img.height;
+    ctx.drawImage(img, 0, 0);
+    drawRectangles();
+  };
+}
+
+async function handleJsonFile(fileDataUrl, openImgBtn, saveJsonBtn) {
+  ctx.clearRect(0, 0, $canva.width, $canva.height);
+  $json_title.innerText = `Json file: ${selector.files[0].name}`;
+  const jsonRectangles = await axios.get(fileDataUrl);
+
+  try {
+    handleJsonData(jsonRectangles, openImgBtn, saveJsonBtn);
+  } catch (error) {
+    Notiflix.Notify.failure("error loading JSON file");
+  }
+}
+
+async function handleJsonData(jsonRectangles, openImgBtn, saveJsonBtn) {
+  let color = rectColor;
+  rectangles.length = 0;
+
+  const data = await jsonRectangles.data;
+  for (const keyElem in data) {
+    const { xmax, ymax, xmin, ymin, width, height, key, tag, label } =
+      data[keyElem];
+    if ("color" in data[keyElem]) color = data[keyElem].color;
+
+    const rectangle = new Rectangle({
+      key,
+      xmin,
+      ymin,
+      xmax,
+      ymax,
+      width,
+      height,
+      tag,
+      label,
+      color,
+    });
+    rectangles.push(rectangle);
+  }
+
+  openImgBtn.classList.toggle("disabled");
+  saveJsonBtn.classList.toggle("disabled");
+}
