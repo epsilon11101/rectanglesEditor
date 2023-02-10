@@ -1,16 +1,16 @@
 main{
     width: 100%;
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
-    justify-content: center;
     align-items: center;
     background-image: url('../../public/robots_bg.jpeg');
-    gap: 20px;
+    gap: 50px;
 
 }
 
 .name{
-    margin-top: 20px;
+    margin-top: 30px;
     width: 90%;
     height: min(100px,150px);
     background-color: var(--secundary_pink);
@@ -41,3 +41,4 @@ main{
 .hide{
     display: none;
 }
+
