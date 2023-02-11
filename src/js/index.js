@@ -2,7 +2,7 @@ import "./styles";
 import Rectangle from "./rectangle";
 import Notiflix from "notiflix";
 import axios from "axios";
-
+import "../html/instructions.html";
 const selector = document.createElement("input");
 const $btn_menu = document.querySelector(".sub-menu");
 const $json_title = document.querySelector(".name p:first-child");
