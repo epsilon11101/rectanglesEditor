@@ -49,3 +49,9 @@ nav .sub-menu button:hover {
     color: var(--primary_white);
     cursor: pointer;
 }
+
+.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
