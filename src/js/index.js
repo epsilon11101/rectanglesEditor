@@ -2,6 +2,7 @@ import "./styles";
 import Rectangle from "./rectangle";
 import Notiflix from "notiflix";
 import axios from "axios";
+import "../html/instructions.html";
 const selector = document.createElement("input");
 const $btn_menu = document.querySelector(".sub-menu");
 const $json_title = document.querySelector(".name p:first-child");
@@ -331,7 +332,7 @@ async function handleOpenJSON(selector) {
 }
 async function handleOpenInstructions() {
   try {
-    const modalCode = await axios.get("../src/html/instructions.html");
+    const modalCode = await axios.get("src/html/instructions.html");
     const $modal = document.querySelector(".instructions");
     $modal.innerHTML = modalCode.data;
     $modal.style.display = "flex";
