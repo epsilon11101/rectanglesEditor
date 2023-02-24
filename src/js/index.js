@@ -13,18 +13,27 @@ const ctx = $canva.getContext("2d");
 const img = new Image();
 
 let rectColor = "#FF0000";
+let selectedColor = "#00FF00";
 
 let isDrawing = false;
 let isEditingWH = false;
 let isEditingXY = false;
+let ismouseMoveDown = false;
 
 let startX, startY, endX, endY;
 let currentRectIndex = -1;
+let increment_name = 1;
 
 const rectangles = [];
 const rectangles_copy = [];
 
 selector.type = "file";
+
+Notiflix.Notify.init({
+  closeButton: true,
+  clickToClose: true,
+  showOnlyTheLastOne: true,
+});
 
 $color_selector.addEventListener("change", (e) => {
   rectColor = `#${$color_selector.color}`;
@@ -60,15 +69,21 @@ $canva.addEventListener("click", (e) => {
   for (const key_r in rectangles) {
     const rectangle = rectangles[key_r].properties;
     const { xmin, ymin, width, height, key } = rectangle;
-    if (
-      clickX >= xmin &&
-      clickX <= xmin + width &&
-      clickY >= ymin &&
-      clickY <= ymin + height
-    ) {
-      currentRectIndex = key_r;
+    const rect = new Path2D();
+    rect.rect(xmin, ymin, width, height);
+
+    if (ctx.isPointInStroke(rect, clickX, clickY)) {
       Notiflix.Notify.info(`Rectangle ${key} selected`);
+      currentRectIndex = key_r;
+      const first_color = rectangles[currentRectIndex].properties.color;
+      rectangles[currentRectIndex].properties.color =
+        rectangles[currentRectIndex].properties.selected_color;
+      drawRectangles();
+      rectangles[currentRectIndex].properties.color = first_color;
       return;
+    } else {
+      currentRectIndex = -1;
+      drawRectangles();
     }
   }
 });
@@ -78,8 +93,9 @@ $canva.addEventListener("dblclick", (e) => {
 });
 
 $canva.addEventListener("mousedown", (e) => {
-  // if (!isEditingWH) isDrawing = true;
-  if (isDrawing) {
+  if (isDrawing && !ismouseMoveDown) {
+    ismouseMoveDown = true;
+    console.log("dibujando");
     let obj_cor = getMousePos(e);
     startX = obj_cor.x;
     startY = obj_cor.y;
@@ -87,8 +103,7 @@ $canva.addEventListener("mousedown", (e) => {
 });
 $canva.addEventListener("mousemove", (e) => {
   let obj_cor = getMousePos(e);
-
-  if (isDrawing) {
+  if (isDrawing && ismouseMoveDown) {
     isUserDrawing(obj_cor);
   } else if (isEditingWH && !isEditingXY) {
     isUserEditWH(obj_cor);
@@ -99,9 +114,10 @@ $canva.addEventListener("mousemove", (e) => {
 
 $canva.addEventListener("mouseup", (e) => {
   if (isDrawing) {
+    console.log(isDrawing, "dibujando", currentRectIndex);
     rectangles.push(
       new Rectangle({
-        key: "new",
+        key: "drawed_div_" + increment_name++,
         xmin: startX,
         ymin: startY,
         xmax: endX,
@@ -111,8 +127,11 @@ $canva.addEventListener("mouseup", (e) => {
         tag: "div",
         label: "div",
         color: rectColor,
+        selected_color: selectedColor,
       })
     );
+    currentRectIndex = -1;
+    ismouseMoveDown = false;
   }
 
   restoreDrawingFLags();
@@ -174,7 +193,7 @@ function drawRectangles() {
   for (const key in rectangles) {
     const rectangle = rectangles[key].properties;
     const { xmin, ymin, width, height, color } = rectangle;
-    ctx.lineWidth = 5;
+    ctx.lineWidth = 10;
     ctx.strokeStyle = color;
     ctx.strokeRect(xmin, ymin, width, height);
   }
@@ -183,6 +202,7 @@ function restoreDrawingFLags() {
   isEditingWH = false;
   isEditingXY = false;
   isDrawing = false;
+  currentRectIndex = -1;
 }
 function handleRestoreRectangle() {
   restoreDrawingFLags();
@@ -231,20 +251,27 @@ function isUserDrawing(obj_cor) {
   ctx.strokeRect(startX, startY, endX - startX, endY - startY);
 }
 function isUserEditWH(obj_cor) {
-  let newWidth = obj_cor.x - rectangles[currentRectIndex].properties.xmin;
-  let newHeight = obj_cor.y - rectangles[currentRectIndex].properties.ymin;
+  if (currentRectIndex != -1) {
+    let newWidth = obj_cor.x - rectangles[currentRectIndex].properties.xmin;
+    let newHeight = obj_cor.y - rectangles[currentRectIndex].properties.ymin;
 
-  rectangles[currentRectIndex].properties.width = newWidth;
-  rectangles[currentRectIndex].properties.height = newHeight;
-  rectangles[currentRectIndex].properties.color = rectColor;
+    rectangles[currentRectIndex].properties.width = newWidth;
+    rectangles[currentRectIndex].properties.height = newHeight;
+    rectangles[currentRectIndex].properties.color = rectColor;
 
-  drawRectangles();
+    drawRectangles();
+  }
 }
 function isUserEditXY(obj_cor) {
-  rectangles[currentRectIndex].properties.xmin = obj_cor.x;
-  rectangles[currentRectIndex].properties.ymin = obj_cor.y;
-  rectangles[currentRectIndex].properties.color = rectColor;
-  drawRectangles();
+  if (currentRectIndex != -1) {
+    let rectangle = rectangles[currentRectIndex].properties;
+    let centerX = obj_cor.x - rectangle.width / 2;
+    let centerY = obj_cor.y - rectangle.height / 2;
+    rectangle.xmin = centerX;
+    rectangle.ymin = centerY;
+    rectangle.color = rectColor;
+    drawRectangles();
+  }
 }
 
 function handleOpenColorSelector(colorSelector) {
@@ -263,6 +290,24 @@ function handleSaveJSON(rectangles) {
   link.href = URL.createObjectURL(blob);
   link.download = "data.json";
   link.click();
+}
+
+function generateName(rectangles) {
+  let lastRectangle = -1;
+
+  const isNew = rectangles.some((rectangle) =>
+    rectangle.properties.key.includes("drawed_div")
+  );
+
+  increment_name = isNew
+    ? Math.max(
+        ...rectangles
+          .filter((rectangle) =>
+            rectangle.properties.key.includes("drawed_div")
+          )
+          .map((rectangle) => parseInt(rectangle.properties.key.split("_")[2]))
+      ) + 1
+    : 1;
 }
 
 async function selectFile(selector) {
@@ -326,6 +371,8 @@ async function handleJsonFile(fileDataUrl, openImgBtn, saveJsonBtn) {
 
 async function handleJsonData(jsonRectangles, openImgBtn, saveJsonBtn) {
   let color = rectColor;
+  let selected_color = selectedColor;
+
   rectangles.length = 0;
 
   const data = await jsonRectangles.data;
@@ -333,6 +380,8 @@ async function handleJsonData(jsonRectangles, openImgBtn, saveJsonBtn) {
     const { xmax, ymax, xmin, ymin, width, height, key, tag, label } =
       data[keyElem];
     if ("color" in data[keyElem]) color = data[keyElem].color;
+    if ("selected_color" in data[keyElem])
+      selected_color = data[keyElem].selected_color;
 
     const rectangle = new Rectangle({
       key,
@@ -345,10 +394,11 @@ async function handleJsonData(jsonRectangles, openImgBtn, saveJsonBtn) {
       tag,
       label,
       color,
+      selected_color,
     });
     rectangles.push(rectangle);
   }
-
+  generateName(rectangles);
   openImgBtn.classList.toggle("disabled");
   saveJsonBtn.classList.toggle("disabled");
 }
